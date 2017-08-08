@@ -4,17 +4,25 @@
 
 Canvas Canvas::instance;
 
-// in us
-#define REFRESH_INTERVAL 18
+#ifdef CANVAS_USE_TIMER1
+    // in us
+    #define REFRESH_INTERVAL 30
 
-#define TIMER1_TICKS_PER_US (APB_CLK_FREQ / 1000000L)
-uint32_t usToTicks(uint32_t us)
-{
-    return (TIMER1_TICKS_PER_US / 1 * us);     // converts microseconds to tick
-}
+    #define TIMER1_TICKS_PER_US (APB_CLK_FREQ / 1000000L)
+    uint32_t usToTicks(uint32_t us)
+    {
+        return (TIMER1_TICKS_PER_US / 1 * us);     // converts microseconds to tick
+    }
+
+#else
+
+    #define TIMER1_CYCLES 2000
+    volatile unsigned long next;
+
+#endif
 
 void ICACHE_RAM_ATTR handle_timer_interrupt() {
-    noInterrupts();
+    //noInterrupts();
 
     static ShiftregState last_shiftreg_state;
     // automatically wraps at 255
@@ -35,18 +43,58 @@ void ICACHE_RAM_ATTR handle_timer_interrupt() {
         last_shiftreg_state = state;
     }
 
-    ++pwm_iteration;
+    pwm_iteration += 2;
 
-    interrupts();
+    // Reset watchdog
+    //wdt_reset();
+
+    //interrupts();
+
+#ifdef CANVAS_USE_TIMER0
+    next=ESP.getCycleCount() + TIMER1_CYCLES;
+    timer0_write(next);
+#endif
+}
+
+void Canvas::update() {
+    static uint32_t last_cycles = 0;
+    uint32_t cycles = ESP.getCycleCount();
+
+    if(cycles % 2048 < last_cycles % 2048) {
+        handle_timer_interrupt();
+    }
+
+    last_cycles = cycles;
 }
 
 void Canvas::init_update_timer() {
-    timer1_disable();
-    timer1_isr_init();
-    timer1_attachInterrupt(handle_timer_interrupt);
-    // this is about as fast as it gets
-    timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
-    timer1_write(usToTicks(REFRESH_INTERVAL));
+    #ifdef CANVAS_USE_TIMER1
+
+        timer1_disable();
+        timer1_isr_init();
+        timer1_attachInterrupt(handle_timer_interrupt);
+        // this is about as fast as it gets
+        timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
+        timer1_write(usToTicks(REFRESH_INTERVAL));
+
+    #else
+
+        timer0_isr_init();
+        timer0_attachInterrupt(handle_timer_interrupt);
+        next=ESP.getCycleCount() + TIMER1_CYCLES;
+        timer0_write(next);
+
+    #endif
+}
+
+void Canvas::init_watchdog() {
+    // Set up ESP watchdog, otherwise timer1 will cause resets
+    //ESP.wdtDisable();
+    //ESP.wdtEnable(WDTO_8S);
+}
+
+void Canvas::setup_shiftreg() {
+    shiftreg_init();
 }
 
 void Canvas::paint(const std::vector<uint8_t>& colors) {

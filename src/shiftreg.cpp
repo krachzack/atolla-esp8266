@@ -1,6 +1,12 @@
 #include <Arduino.h>
 #include "shiftreg.h"
 
+void shiftreg_init() {
+    pinMode(PIN_SHIFTREG_DATA, OUTPUT);
+    pinMode(PIN_SHIFTREG_CLOCK_DATA, OUTPUT);
+    pinMode(PIN_SHIFTREG_CLOCK_LATCH, OUTPUT);
+}
+
 void shiftreg_set(ShiftregState state) {
     digitalWrite(PIN_SHIFTREG_CLOCK_DATA, LOW);
     digitalWrite(PIN_SHIFTREG_CLOCK_LATCH, LOW);
