@@ -39,7 +39,6 @@ private:
 
     friend void ICACHE_RAM_ATTR handle_timer_interrupt();
 
-    // For each output holds the remaining iterations for the
     std::array<uint8_t, SHIFTREG_OUTPUT_COUNT> thresholds;
 };
 

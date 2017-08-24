@@ -16,8 +16,6 @@ void configModeCallback (WiFiManager *myWiFiManager) {
 }
 
 void setup() {
-  Serial.begin(9600);
-
   shiftreg_init();
 
   ShiftregState yellow;
@@ -35,6 +33,8 @@ void setup() {
   //set callback that gets called when connecting to previous WiFi fails, and enters Access Point mode
   wifiManager.setAPCallback(configModeCallback);
 
+  Serial.begin(9600);
+
   //fetches ssid and pass and tries to connect
   //if it does not connect it starts an access point with the specified name
   //here  "AutoConnectAP"
@@ -48,6 +48,7 @@ void setup() {
 
   //if you get here you have connected to the WiFi
   Serial.println("connected...yeey :)");
+  Serial.end();
 
   canvas.begin();
   //canvas.setAutoUpdate();
