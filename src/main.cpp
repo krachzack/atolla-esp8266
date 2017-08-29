@@ -13,12 +13,10 @@
 Canvas& canvas = Canvas::instance;
 const AtollaSinkSpec sinkSpec = {
   10042, // port
-  2      // two lights
+  SHIFTREG_OUTPUT_COUNT/3 // two lights
 };
-const size_t frameLen = sinkSpec.lights_count * 3;
 AtollaSink sink;
 AtollaSinkState sinkState = ATOLLA_SINK_STATE_OPEN;
-std::vector<uint8_t> frame;
 
 //Ticker receiveTicker;
 //Ticker repaintTicker;
@@ -88,7 +86,6 @@ void setup() {
 }
 
 void initAtolla() {
-  frame.resize(sinkSpec.lights_count * 3);
   sink = atolla_sink_make(&sinkSpec);
 }
 
@@ -121,11 +118,8 @@ void receive() {
 
 void repaint() {
   if(sinkState == ATOLLA_SINK_STATE_LENT) {
-    bool ok = atolla_sink_get(sink, frame.data(), frame.size());
-    if(ok) {
-      //Serial.println("Lent - Painting");
-      canvas.paint(frame);
-    } else {
+    bool ok = atolla_sink_get(sink, canvas.thresholds.data(), canvas.thresholds.size());
+    if(!ok) {
       //Serial.println("Lent - Clearing");
       canvas.clear();
     }

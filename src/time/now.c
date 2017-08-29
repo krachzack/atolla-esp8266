@@ -6,7 +6,7 @@
 #include "time/gettime.h"
 #endif
 
-int time_now()
+unsigned int time_now()
 {
 #ifdef HAVE_ARDUINO_SLEEP
     return millis();

@@ -30,14 +30,14 @@ public:
         paint(pattern);
     }
 
+    std::array<uint8_t, SHIFTREG_OUTPUT_COUNT> thresholds;
+
 private:
     void init_update_timer();
     void setup_shiftreg();
     void init_watchdog();
 
     friend void ICACHE_RAM_ATTR handle_timer_interrupt();
-
-    std::array<uint8_t, SHIFTREG_OUTPUT_COUNT> thresholds;
 };
 
 #endif

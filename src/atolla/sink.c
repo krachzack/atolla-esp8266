@@ -44,7 +44,7 @@ struct AtollaSinkPrivate
     MemBlock received_frame;
     MemRing pending_frames;
 
-    int time_origin;
+    unsigned int time_origin;
     int last_enqueued_frame_idx;
 
     int last_recv_time;
@@ -138,18 +138,26 @@ bool atolla_sink_get(AtollaSink sink_handle, void* frame, size_t frame_len)
     {
         if(sink->time_origin == -1)
         {
-            // Waiting for the first enqueue package, no frame data available yet
-            return false;
-        }
-
-        while(sink->time_origin <= time_now()) {
+            // Set origin on first dequeue
             bool ok = mem_ring_dequeue(&sink->pending_frames, sink->current_frame.data, sink->current_frame.capacity);
-
             if(ok) {
-                sink->time_origin += sink->frame_duration_ms;
+                sink->time_origin = time_now();
             } else {
-                // FIXME Experiencing lag, somehow handle this?
-                break;
+                // nothing available yet
+                return false;
+            }
+        }
+        else
+        {
+            unsigned int now = time_now();
+            while((now - sink->time_origin) > sink->frame_duration_ms) {
+                bool ok = mem_ring_dequeue(&sink->pending_frames, sink->current_frame.data, sink->current_frame.capacity);
+                if(ok) {
+                    sink->time_origin += sink->frame_duration_ms;
+                } else {
+                    // TODO Experiencing lag, maybe tell the source to catch up
+                    break;
+                }
             }
         }
 
@@ -278,12 +286,6 @@ static void sink_handle_enqueue(AtollaSinkPrivate* sink, size_t frame_idx, MemBl
         // If would have to skip more than 128, this is an out of order package.
         // We just drop it.
         return;
-    }
-
-    if(sink->time_origin == -1)
-    {
-        // set time of first enqueue as origin
-        sink->time_origin = time_now();
     }
 
     while(diff > 0) {
