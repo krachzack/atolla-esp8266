@@ -173,8 +173,10 @@ static void sink_update(AtollaSinkPrivate* sink)
 {
     UdpSocketResult result;
 
+    const size_t max_receives = 4;
+
     // Try receiving until would block
-    //while(true) {
+    for(int i = 0; i < max_receives; ++i) {
         size_t received_bytes = 0;
         result = udp_socket_receive(
             &sink->socket,
@@ -198,7 +200,7 @@ static void sink_update(AtollaSinkPrivate* sink)
             }
             return;
         }
-    //}
+    }
 }
 
 static void sink_iterate_recv_buf(AtollaSinkPrivate* sink, size_t received_bytes)
