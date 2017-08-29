@@ -4,6 +4,14 @@
 
 Canvas Canvas::instance;
 
+#ifdef CANVAS_USE_TIMER0
+
+    #define TIMER0_INTERVAL_US 400
+    #define TIMER0_CYCLES (TIMER0_INTERVAL_US * 80)
+    volatile unsigned long next;
+
+#endif
+
 #ifdef CANVAS_USE_TIMER1
     // in us
     #define REFRESH_INTERVAL 30
@@ -13,19 +21,41 @@ Canvas Canvas::instance;
     {
         return (TIMER1_TICKS_PER_US / 1 * us);     // converts microseconds to tick
     }
-
-#else
-
-    #define TIMER1_CYCLES 2000
-    volatile unsigned long next;
-
 #endif
 
-void ICACHE_RAM_ATTR handle_timer_interrupt() {
+#ifdef CANVAS_USE_OS_TIMER
+
+    #ifndef USE_US_TIMER
+    #error "Need microsecond resolution timers, enable USE_US_TIMER when building SDK"
+    #endif
+
+    extern "C" {
+        #include "user_interface.h"
+    }
+
+    os_timer_t updateTimer;
+
+    #define OS_TIMER_US_PERIOD 500
+#endif
+
+
+
+#ifdef CANVAS_USE_OS_TIMER
+void ICACHE_FLASH_ATTR
+#else
+void ICACHE_RAM_ATTR
+#endif
+handle_timer_interrupt() {
+
+#ifdef CANVAS_USE_TIMER0
+    next=ESP.getCycleCount() + TIMER0_CYCLES;
+    timer0_write(next);
+#endif
+
     //noInterrupts();
 
     static ShiftregState last_shiftreg_state;
-    // automatically wraps at 255
+    // automatically wraps at 256
     static uint8_t pwm_iteration = 0;
 
     ShiftregState state;
@@ -43,17 +73,12 @@ void ICACHE_RAM_ATTR handle_timer_interrupt() {
         last_shiftreg_state = state;
     }
 
-    pwm_iteration += 2;
+    pwm_iteration += 8;
 
     // Reset watchdog
     //wdt_reset();
 
     //interrupts();
-
-#ifdef CANVAS_USE_TIMER0
-    next=ESP.getCycleCount() + TIMER1_CYCLES;
-    timer0_write(next);
-#endif
 }
 
 void Canvas::update() {
@@ -68,23 +93,37 @@ void Canvas::update() {
 }
 
 void Canvas::init_update_timer() {
-    #ifdef CANVAS_USE_TIMER1
+#ifdef CANVAS_USE_TIMER1
 
-        timer1_disable();
-        timer1_isr_init();
-        timer1_attachInterrupt(handle_timer_interrupt);
-        // this is about as fast as it gets
-        timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
-        timer1_write(usToTicks(REFRESH_INTERVAL));
+    timer1_disable();
+    timer1_isr_init();
+    timer1_attachInterrupt(handle_timer_interrupt);
+    // this is about as fast as it gets
+    timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
+    timer1_write(usToTicks(REFRESH_INTERVAL));
 
-    #else
+#endif
 
-        timer0_isr_init();
-        timer0_attachInterrupt(handle_timer_interrupt);
-        next=ESP.getCycleCount() + TIMER1_CYCLES;
-        timer0_write(next);
+#ifdef CANVAS_USE_TIMER0
 
-    #endif
+    timer0_isr_init();
+    timer0_attachInterrupt(handle_timer_interrupt);
+    next=ESP.getCycleCount() + TIMER0_CYCLES;
+    timer0_write(next);
+
+#endif
+
+#ifdef CANVAS_USE_OS_TIMER
+    //updateTicker.attach_ms(1, handle_timer_interrupt);
+
+    system_timer_reinit();
+
+    os_timer_disarm(&updateTimer);
+    os_timer_setfn(&updateTimer, (os_timer_func_t *) handle_timer_interrupt, NULL);
+    // As per documentation The highest precision is 500 μs.
+    os_timer_arm_us(&updateTimer, OS_TIMER_US_PERIOD, true);
+
+#endif
 }
 
 void Canvas::init_watchdog() {

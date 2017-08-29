@@ -13,11 +13,9 @@ class Canvas {
 public:
     static Canvas instance;
 
-    void begin() { setup_shiftreg(); }
+    void begin() { setup_shiftreg(); init_watchdog(); init_update_timer(); }
 
     void update();
-
-    void setAutoUpdate() { init_watchdog(); init_update_timer(); }
 
     void clear() { thresholds.fill(0); }
 

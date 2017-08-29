@@ -19,6 +19,8 @@
 #define SHIFTREG_NEGATIVE_LOGIC
 
 //#define CANVAS_USE_TIMER0
-#define CANVAS_USE_TIMER1
+//#define CANVAS_USE_TIMER1
+// Flag to use ticker libary
+#define CANVAS_USE_OS_TIMER
 
 #endif
