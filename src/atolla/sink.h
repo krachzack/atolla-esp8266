@@ -35,10 +35,19 @@ AtollaSink atolla_sink_make(const AtollaSinkSpec* spec);
 
 void atolla_sink_free(AtollaSink sink);
 
+/**
+ * Redetermines the state of the sink based on incoming packets.
+ */
 AtollaSinkState atolla_sink_state(AtollaSink sink);
 
 /**
- * If false, no frame available yet.
+ * Gets the current frame based on the instant in time upon calling the
+ * function.
+ *
+ * Note that atolla_sink_state must be regularly called to evaluate
+ * incoming packets in order for atolla_sink_get to provide results.
+ *
+ * If returns false, no frame available yet.
  */
 bool atolla_sink_get(AtollaSink sink, void* frame, size_t frame_len);
 

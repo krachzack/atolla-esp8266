@@ -173,7 +173,7 @@ static void sink_update(AtollaSinkPrivate* sink)
 {
     UdpSocketResult result;
 
-    const size_t max_receives = 4;
+    const size_t max_receives = 1;
 
     // Try receiving until would block
     for(int i = 0; i < max_receives; ++i) {
