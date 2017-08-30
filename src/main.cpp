@@ -8,6 +8,14 @@
 #include "WiFiManager.h"          //https://github.com/tzapu/WiFiManager
 #include "shiftreg.h"
 
+extern "C" {
+  #include "user_interface.h"
+}
+
+os_timer_t repaintTimer;
+
+#define REPAINT_TIMER_US_PERIOD 4500
+
 #define HOSTNAME "brett"
 
 Canvas& canvas = Canvas::instance;
@@ -104,6 +112,8 @@ void initMDNS() {
 void initTiming() {
   //receiveTicker.attach_ms(20, receive);
   //repaintTicker.attach_ms(50, repaint);
+  os_timer_setfn(&repaintTimer, (os_timer_func_t *) repaint, NULL);
+  os_timer_arm_us(&repaintTimer, REPAINT_TIMER_US_PERIOD, true);
 }
 
 void receive() {
@@ -133,5 +143,5 @@ void repaint() {
 
 void loop() {
   receive();
-  repaint();
+  //repaint();
 }
