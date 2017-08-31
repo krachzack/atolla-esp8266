@@ -1,11 +1,9 @@
 #include <Arduino.h>
 #include <ESP8266mDNS.h>
-//#include <Ticker.h>
-
-#include "atolla/sink.h"
+#include <atolla/sink.h>
+#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 
 #include "canvas.h"
-#include "WiFiManager.h"          //https://github.com/tzapu/WiFiManager
 #include "shiftreg.h"
 
 extern "C" {
@@ -25,9 +23,6 @@ const AtollaSinkSpec sinkSpec = {
 };
 AtollaSink sink;
 AtollaSinkState sinkState = ATOLLA_SINK_STATE_OPEN;
-
-//Ticker receiveTicker;
-//Ticker repaintTicker;
 
 void initAtolla();
 void initMDNS();
@@ -143,5 +138,4 @@ void repaint() {
 
 void loop() {
   receive();
-  //repaint();
 }
